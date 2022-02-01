@@ -73,11 +73,13 @@ allprojects {
         maxWarnings = 0 // ... or warnings
     }
 
-    java {
-        toolchain {
-            languageVersion.set(JavaLanguageVersion.of(javaVersion))
-        }
-    }
+// Commented so it runs on M1 Apple Macs
+//    java {
+//        toolchain {
+//            languageVersion.set(JavaLanguageVersion.of(javaVersion)
+//            vendor.set(JvmVendorSpec.AZUL) <= something like this might make an m1 compatible java11 version possible.
+//        }
+//    }
 
     pluginManager.withPlugin("java-library") {
         group = groupId
