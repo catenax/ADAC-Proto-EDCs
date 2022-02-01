@@ -1,2 +1,2 @@
 ### GET hello world
-GET {{url}}/api/hello/world
+GET {{url}}/api/hello
