@@ -10,7 +10,7 @@ import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 
 @Consumes({MediaType.APPLICATION_JSON})
 @Produces({MediaType.APPLICATION_JSON})
-@Path("/")
+@Path("/hello")
 public class HealthApiController {
 
     private final Monitor monitor;
@@ -20,7 +20,7 @@ public class HealthApiController {
     }
 
     @GET
-    @Path("health")
+    @Path("world")
     public String checkHealth() {
         monitor.info("Received a health request");
         return "{\"response\":\"I'm alive!\"}";

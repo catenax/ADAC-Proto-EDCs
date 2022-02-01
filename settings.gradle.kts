@@ -161,3 +161,4 @@ include(":samples:05-file-transfer-cloud:transfer-file")
 
 // ADAC
 include(":adac:01-first-connector")
+include(":adac:02-hello-world-api")
