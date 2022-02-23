@@ -16,6 +16,7 @@ plugins {
     `java-library`
     `maven-publish`
     checkstyle
+    jacoco
     id("com.rameshkp.openapi-merger-gradle-plugin") version "1.0.4"
 }
 
@@ -65,6 +66,7 @@ allprojects {
     apply(plugin = "maven-publish")
     apply(plugin = "checkstyle")
     apply(plugin = "java")
+    apply(plugin = "jacoco")
 
     checkstyle {
         toolVersion = "9.0"
@@ -80,6 +82,13 @@ allprojects {
 //            vendor.set(JvmVendorSpec.AZUL) <= something like this might make an m1 compatible java11 version possible.
 //        }
 //    }
+
+    // EdcRuntimeExtension uses this to determine the runtime classpath of the module to run.
+    tasks.register("printClasspath") {
+        doLast {
+            println(sourceSets["main"].runtimeClasspath.asPath);
+        }
+    }
 
     pluginManager.withPlugin("java-library") {
         group = groupId
@@ -163,6 +172,13 @@ allprojects {
         metaInf {
             from("${rootProject.projectDir.path}/LICENSE")
             from("${rootProject.projectDir.path}/NOTICE.md")
+        }
+    }
+
+    // Generate XML reports for Codecov
+    tasks.jacocoTestReport {
+        reports {
+            xml.required.set(true)
         }
     }
 }

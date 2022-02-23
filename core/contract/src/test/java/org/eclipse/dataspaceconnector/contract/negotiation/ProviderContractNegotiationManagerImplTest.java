@@ -14,6 +14,9 @@
 package org.eclipse.dataspaceconnector.contract.negotiation;
 
 import org.eclipse.dataspaceconnector.policy.model.Policy;
+import org.eclipse.dataspaceconnector.spi.command.CommandQueue;
+import org.eclipse.dataspaceconnector.spi.command.CommandRunner;
+import org.eclipse.dataspaceconnector.spi.contract.negotiation.observe.ContractNegotiationObservable;
 import org.eclipse.dataspaceconnector.spi.contract.negotiation.response.NegotiationResult;
 import org.eclipse.dataspaceconnector.spi.contract.negotiation.store.ContractNegotiationStore;
 import org.eclipse.dataspaceconnector.spi.contract.validation.ContractValidationService;
@@ -25,18 +28,21 @@ import org.eclipse.dataspaceconnector.spi.types.domain.contract.agreement.Contra
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractNegotiation;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractNegotiationStates;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractOfferRequest;
+import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.command.ContractNegotiationCommand;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.offer.ContractOffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -54,11 +60,11 @@ class ProviderContractNegotiationManagerImplTest {
     private final String correlationId = "correlationId";
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         negotiations.clear();
 
         // Mock contract negotiation store -> persist negotiations in map
-        ContractNegotiationStore negotiationStore = mock(ContractNegotiationStore.class);
+        var negotiationStore = mock(ContractNegotiationStore.class);
 
         doAnswer(invocation -> {
             var negotiation = invocation.getArgument(0, ContractNegotiation.class);
@@ -82,22 +88,19 @@ class ProviderContractNegotiationManagerImplTest {
         // Create contract validation service mock, method mocking has to be done in test methods
         validationService = mock(ContractValidationService.class);
 
-        // Create dispatcher registry mock in order to create manager, not used in unit tests
-        RemoteMessageDispatcherRegistry dispatcherRegistry = mock(RemoteMessageDispatcherRegistry.class);
-
-        // Create monitor mock
-        Monitor monitor = mock(Monitor.class);
+        // Create CommandQueue mock
+        CommandQueue<ContractNegotiationCommand> queue = mock(CommandQueue.class);
+        when(queue.dequeue(anyInt())).thenReturn(new ArrayList<>());
 
         negotiationManager = ProviderContractNegotiationManagerImpl.Builder.newInstance()
                 .validationService(validationService)
-                .dispatcherRegistry(dispatcherRegistry)
-                .monitor(monitor)
+                .dispatcherRegistry(mock(RemoteMessageDispatcherRegistry.class))
+                .monitor(mock(Monitor.class))
+                .commandQueue(queue)
+                .commandRunner(mock(CommandRunner.class))
+                .observable(mock(ContractNegotiationObservable.class))
+                .store(negotiationStore)
                 .build();
-
-        //TODO hand over store in start method, but run method should not be executed
-        var negotiationStoreField = ProviderContractNegotiationManagerImpl.class.getDeclaredField("negotiationStore");
-        negotiationStoreField.setAccessible(true);
-        negotiationStoreField.set(negotiationManager, negotiationStore);
     }
 
     @Test

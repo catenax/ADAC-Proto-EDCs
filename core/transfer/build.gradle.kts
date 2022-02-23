@@ -12,16 +12,17 @@
  *
  */
 
+val openTelemetryVersion: String by project
+
 plugins {
     `java-library`
 }
 
-
 dependencies {
-    api(project(":spi"))
+    api(project(":spi:transfer-spi"))
+
     implementation(project(":common:util"))
-    implementation(project(":core:base"))
-    implementation(project(":extensions:inline-data-transfer:inline-data-transfer-core"))
+    implementation("io.opentelemetry:opentelemetry-extension-annotations:${openTelemetryVersion}")
 
     testImplementation(project(":extensions:in-memory:transfer-store-memory"))
 }
