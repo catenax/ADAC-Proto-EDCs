@@ -192,9 +192,12 @@ include(":system-tests:runtimes:file-transfer-provider")
 include(":system-tests:runtimes:file-transfer-consumer")
 include(":system-tests:tests")
 
+
 // ADAC
 include(":adac:01-first-connector")
 include(":adac:02-hello-world-api")
 
-include(":adac:10-adac-provider")
-include(":adac:11-adac-consumer")
+include(":adac:adac-provider-cp")
+include(":adac:adac-provider-dp")
+include(":adac:adac-consumer-cp")
+include(":adac:adac-consumer-dp")

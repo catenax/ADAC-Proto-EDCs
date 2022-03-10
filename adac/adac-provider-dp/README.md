@@ -1,4 +1,4 @@
-# ADAC Provider EDC
+# ADAC Provider Data Plane EDC
 
 ```bash
 ./gradlew clean adac:10-adac-provider:build

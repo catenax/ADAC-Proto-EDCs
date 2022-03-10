@@ -1,4 +1,4 @@
-# ADAC Consumer EDC
+# ADAC Consumer Data Plane EDC
 
 ```bash
 ./gradlew clean adac:11-adac-consumer:build
