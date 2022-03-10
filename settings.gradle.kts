@@ -195,3 +195,6 @@ include(":system-tests:tests")
 // ADAC
 include(":adac:01-first-connector")
 include(":adac:02-hello-world-api")
+
+include(":adac:10-adac-provider")
+include(":adac:11-adac-consumer")
