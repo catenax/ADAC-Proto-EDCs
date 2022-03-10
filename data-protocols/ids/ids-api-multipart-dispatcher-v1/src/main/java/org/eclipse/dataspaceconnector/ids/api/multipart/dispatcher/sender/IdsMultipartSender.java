@@ -44,6 +44,8 @@ import org.jetbrains.annotations.NotNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.URI;
 import java.net.http.HttpHeaders;
 import java.util.Objects;
@@ -59,7 +61,7 @@ import static java.util.concurrent.CompletableFuture.failedFuture;
  */
 abstract class IdsMultipartSender<M extends RemoteMessage, R> implements IdsMessageSender<M, R> {
     private final URI connectorId;
-    private final OkHttpClient httpClient;
+    private OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final Monitor monitor;
     private final IdentityService identityService;
@@ -177,6 +179,8 @@ abstract class IdsMultipartSender<M extends RemoteMessage, R> implements IdsMess
 
         var multipartRequestBody = multipartBuilder.build();
 
+        var proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 8888));
+        httpClient = httpClient.newBuilder().proxy(proxy).build();
         // Build HTTP request
         var httpRequest = new Request.Builder()
                 .url(requestUrl)

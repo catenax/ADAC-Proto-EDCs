@@ -80,7 +80,7 @@ public class FileTransferExtension implements ServiceExtension {
     }
 
     private void registerDataEntries(ServiceExtensionContext context) {
-        String assetPathSetting = context.getSetting(EDC_ASSET_PATH, "/tmp/provider/test-document.txt");
+        String assetPathSetting = context.getSetting(EDC_ASSET_PATH, "/Users/ermalbujupaj/Documents/test-document.txt");
         Path assetPath = Path.of(assetPathSetting);
 
         DataAddress dataAddress = DataAddress.Builder.newInstance()
