@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 Fraunhofer Institute for Software and Systems Engineering
+ *  Copyright (c) 2021 - 2022 Fraunhofer Institute for Software and Systems Engineering
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -31,14 +31,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.eclipse.dataspaceconnector.common.testfixtures.TestUtils.getFreePort;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -63,14 +62,6 @@ abstract class AbstractMultipartDispatcherIntegrationTest {
 
     protected IdentityService identityService;
 
-    private static int findUnallocatedServerPort() {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        } catch (IOException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-    }
-
     @AfterEach
     void after() {
         ASSETS.clear();
@@ -84,7 +75,7 @@ abstract class AbstractMultipartDispatcherIntegrationTest {
 
     @BeforeEach
     protected void before(EdcExtension extension) {
-        PORT.set(findUnallocatedServerPort());
+        PORT.set(getFreePort());
 
         for (Map.Entry<String, String> entry : getSystemProperties().entrySet()) {
             System.setProperty(entry.getKey(), entry.getValue());
@@ -94,7 +85,7 @@ abstract class AbstractMultipartDispatcherIntegrationTest {
         var claimToken = ClaimToken.Builder.newInstance().claim("key", "value").build();
         identityService = mock(IdentityService.class);
         when(identityService.obtainClientCredentials(any())).thenReturn(Result.success(tokenResult));
-        when(identityService.verifyJwtToken(any())).thenReturn(Result.success(claimToken));
+        when(identityService.verifyJwtToken(any(TokenRepresentation.class))).thenReturn(Result.success(claimToken));
 
         extension.registerSystemExtension(ServiceExtension.class,
                 new IdsApiMultipartDispatcherV1IntegrationTestServiceExtension(ASSETS, identityService));

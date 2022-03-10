@@ -2,8 +2,8 @@ package org.eclipse.dataspaceconnector.catalog.cache.loader;
 
 import org.eclipse.dataspaceconnector.catalog.spi.Loader;
 import org.eclipse.dataspaceconnector.catalog.spi.model.UpdateResponse;
-import org.eclipse.dataspaceconnector.spi.WaitStrategy;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
+import org.eclipse.dataspaceconnector.spi.retry.WaitStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class LoaderManagerImplTest {
     @Test
     @DisplayName("Verify that the loader manager waits one pass when the queue does not yet contain sufficient elements")
     void batchSizeNotReachedWithinTimeframe() throws InterruptedException {
-        range(0, batchSize).forEach(i -> queue.offer(new UpdateResponse()));
+        range(0, batchSize - 1).forEach(i -> queue.offer(new UpdateResponse()));
         var completionSignal = new CountDownLatch(1);
         when(waitStrategyMock.retryInMillis()).thenAnswer(i -> {
             completionSignal.countDown();
@@ -49,7 +49,7 @@ class LoaderManagerImplTest {
 
         loaderManager.start(queue);
 
-        assertThat(completionSignal.await(100L, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(completionSignal.await(300L, TimeUnit.MILLISECONDS)).isTrue();
         verify(waitStrategyMock, atLeastOnce()).retryInMillis();
     }
 

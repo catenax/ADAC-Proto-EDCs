@@ -30,8 +30,14 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.security.KeyStore;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.eclipse.jetty.servlet.ServletContextHandler.NO_SESSIONS;
 
@@ -40,11 +46,13 @@ import static org.eclipse.jetty.servlet.ServletContextHandler.NO_SESSIONS;
  */
 public class JettyService {
 
+    public static final String DEFAULT_ROOT_PATH = "/api";
     private static final String LOG_ANNOUNCE = "org.eclipse.jetty.util.log.announce";
     private final JettyConfiguration configuration;
     private final Monitor monitor;
     private final KeyStore keyStore;
     private final Map<String, ServletContextHandler> handlers = new HashMap<>();
+    private final List<Consumer<ServerConnector>> connectorConfigurationCallbacks = new ArrayList<>();
     private Server server;
 
     public JettyService(JettyConfiguration configuration, Monitor monitor) {
@@ -56,26 +64,37 @@ public class JettyService {
         this.keyStore = keyStore;
         this.monitor = monitor;
         System.setProperty(LOG_ANNOUNCE, "false");
+        // for websocket endpoints
         handlers.put("/", new ServletContextHandler(null, "/", NO_SESSIONS));
     }
 
     public void start() {
         try {
-            var port = configuration.getHttpPort();
             server = new Server();
+            //create a connector for every port mapping
+            configuration.getPortMappings().forEach(mapping -> {
 
-            if (keyStore != null) {
-                server.addConnector(httpsServerConnector(port));
-                monitor.info("HTTPS listening on " + port);
-            } else {
-                server.addConnector(httpServerConnector(port));
-                monitor.info("HTTP listening on " + port);
-            }
+                ServerConnector connector;
+                if (Arrays.stream(server.getConnectors()).anyMatch(c -> ((ServerConnector) c).getPort() == mapping.getPort())) {
+                    throw new IllegalArgumentException("A binding for port " + mapping.getPort() + " already exists");
+                }
+                if (keyStore != null) {
+                    connector = httpsServerConnector(mapping.getPort());
+                    monitor.info("HTTPS context '" + mapping.getName() + "' listening on port " + mapping.getPort());
+                } else {
+                    connector = httpServerConnector(mapping.getPort());
+                    monitor.info("HTTP context '" + mapping.getName() + "' listening on port " + mapping.getPort());
+                }
+                connector.setName(mapping.getName());
+                server.addConnector(connector);
 
+                ServletContextHandler handler = createHandler(mapping);
+                handlers.put(mapping.getPath(), handler);
+            });
             server.setErrorHandler(new JettyErrorHandler());
             server.setHandler(new ContextHandlerCollection(handlers.values().toArray(ServletContextHandler[]::new)));
-
             server.start();
+            monitor.debug("Port mappings: " + configuration.getPortMappings().stream().map(PortMapping::toString).collect(Collectors.joining(", ")));
         } catch (Exception e) {
             throw new EdcException("Error starting Jetty service", e);
         }
@@ -86,31 +105,39 @@ public class JettyService {
         try {
             if (server != null) {
                 server.stop();
+                server.join(); //wait for all threads to wind down
             }
         } catch (Exception e) {
             throw new EdcException("Error shutting down Jetty service", e);
         }
     }
 
-    public void registerServlet(String contextPath, String path, Servlet servlet) {
+    public void registerServlet(String contextName, Servlet servlet) {
         ServletHolder servletHolder = new ServletHolder(Source.EMBEDDED);
-        servletHolder.setName("EDC");
+        servletHolder.setName("EDC-" + contextName); //must be unique
         servletHolder.setServlet(servlet);
         servletHolder.setInitOrder(1);
 
-        var handler = getOrCreate(contextPath);
+        var actualPath = configuration.getPortMappings().stream()
+                .filter(pm -> Objects.equals(contextName, pm.getName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No PortMapping for contextName '" + contextName + "' found"))
+                .getPath();
 
-        handler.getServletHandler().addServletWithMapping(servletHolder, path);
+        var handler = getOrCreate(actualPath);
+        handler.getServletHandler().addServletWithMapping(servletHolder, "/*");
     }
 
     public ServletContextHandler getHandler(String path) {
         return handlers.get(path);
     }
 
-    public void registerHandler(ServletContextHandler handler) {
-        handlers.put(handler.getContextPath(), handler);
+    @NotNull
+    private ServletContextHandler createHandler(PortMapping mapping) {
+        var handler = new ServletContextHandler(null, mapping.getPath(), NO_SESSIONS);
+        handler.setVirtualHosts(new String[]{ "@" + mapping.getName() });
+        return handler;
     }
-
 
     @NotNull
     private ServerConnector httpsServerConnector(int port) {
@@ -125,6 +152,7 @@ public class JettyService {
         var sslConnectionFactory = new SslConnectionFactory(contextFactory, "http/1.1");
         var sslConnector = new ServerConnector(server, httpConnectionFactory(), sslConnectionFactory);
         sslConnector.setPort(port);
+        configure(sslConnector);
         return sslConnector;
     }
 
@@ -132,7 +160,16 @@ public class JettyService {
     private ServerConnector httpServerConnector(int port) {
         ServerConnector connector = new ServerConnector(server, httpConnectionFactory());
         connector.setPort(port);
+        configure(connector);
         return connector;
+    }
+
+    private void configure(ServerConnector connector) {
+        connectorConfigurationCallbacks.forEach(c -> c.accept(connector));
+    }
+
+    public void addConnectorConfigurationCallback(Consumer<ServerConnector> callback) {
+        connectorConfigurationCallbacks.add(callback);
     }
 
     @NotNull

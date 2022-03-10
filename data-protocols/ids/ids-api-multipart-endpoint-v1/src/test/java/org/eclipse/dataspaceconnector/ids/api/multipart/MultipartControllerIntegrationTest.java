@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.dataspaceconnector.common.testfixtures.TestUtils.testOkHttpClient;
 
 public class MultipartControllerIntegrationTest extends AbstractMultipartControllerIntegrationTest {
     private static final String CONNECTOR_ID = UUID.randomUUID().toString();
@@ -47,8 +48,7 @@ public class MultipartControllerIntegrationTest extends AbstractMultipartControl
 
     @BeforeAll
     static void setUp() {
-        httpClient = new OkHttpClient.Builder()
-                .build();
+        httpClient = testOkHttpClient();
     }
 
     @Test

@@ -10,6 +10,7 @@
  *  Contributors:
  *       Daimler TSS GmbH - Initial API and Implementation
  *       Fraunhofer Institute for Software and Systems Engineering - extend tests
+ *       Daimler TSS GmbH - fixed contract dates to epoch seconds
  *
  */
 
@@ -22,7 +23,6 @@ import org.eclipse.dataspaceconnector.policy.model.Policy;
 import org.eclipse.dataspaceconnector.policy.model.PolicyType;
 import org.eclipse.dataspaceconnector.spi.asset.AssetIndex;
 import org.eclipse.dataspaceconnector.spi.asset.AssetSelectorExpression;
-import org.eclipse.dataspaceconnector.spi.asset.Criterion;
 import org.eclipse.dataspaceconnector.spi.contract.negotiation.ConsumerContractNegotiationManager;
 import org.eclipse.dataspaceconnector.spi.contract.negotiation.ProviderContractNegotiationManager;
 import org.eclipse.dataspaceconnector.spi.contract.negotiation.response.NegotiationResult;
@@ -37,6 +37,7 @@ import org.eclipse.dataspaceconnector.spi.iam.TokenRepresentation;
 import org.eclipse.dataspaceconnector.spi.message.MessageContext;
 import org.eclipse.dataspaceconnector.spi.message.RemoteMessageDispatcher;
 import org.eclipse.dataspaceconnector.spi.message.RemoteMessageDispatcherRegistry;
+import org.eclipse.dataspaceconnector.spi.query.QuerySpec;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 import org.eclipse.dataspaceconnector.spi.system.Provides;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
@@ -47,6 +48,7 @@ import org.eclipse.dataspaceconnector.spi.types.domain.contract.agreement.Contra
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractNegotiation;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractNegotiationStates;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractOfferRequest;
+import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.command.ContractNegotiationCommand;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.offer.ContractDefinition;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.offer.ContractOffer;
 import org.eclipse.dataspaceconnector.spi.types.domain.message.RemoteMessage;
@@ -54,13 +56,13 @@ import org.eclipse.dataspaceconnector.spi.types.domain.transfer.TransferProcess;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.LocalDate;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -89,9 +91,9 @@ class IdsApiMultipartEndpointV1IntegrationTestServiceExtension implements Servic
                         .consumerAgentId("consumer")
                         .asset(Asset.Builder.newInstance().build())
                         .policy(Policy.Builder.newInstance().build())
-                        .contractSigningDate(LocalDate.MIN.toEpochDay())
-                        .contractStartDate(LocalDate.MIN.toEpochDay())
-                        .contractEndDate(LocalDate.MAX.toEpochDay())
+                        .contractStartDate(Instant.now().getEpochSecond())
+                        .contractEndDate(Instant.now().plus(1, ChronoUnit.DAYS).getEpochSecond())
+                        .contractSigningDate(Instant.now().getEpochSecond())
                         .id("1:2").build())
                 .state(ContractNegotiationStates.CONFIRMED.code())
                 .build();
@@ -118,7 +120,7 @@ class IdsApiMultipartEndpointV1IntegrationTestServiceExtension implements Servic
         }
 
         @Override
-        public Result<ClaimToken> verifyJwtToken(String token) {
+        public Result<ClaimToken> verifyJwtToken(TokenRepresentation tokenRepresentation) {
             return Result.success(ClaimToken.Builder.newInstance().build());
         }
     }
@@ -136,14 +138,15 @@ class IdsApiMultipartEndpointV1IntegrationTestServiceExtension implements Servic
         }
 
         @Override
-        public Stream<Asset> queryAssets(List<Criterion> criteria) {
-            return null;
+        public Stream<Asset> queryAssets(QuerySpec querySpec) {
+            throw new UnsupportedOperationException("Filtering/Paging not supported");
         }
 
         @Override
         public Asset findById(String assetId) {
             return assets.stream().filter(a -> a.getId().equals(assetId)).findFirst().orElse(null);
         }
+
     }
 
     private static class FakeContractOfferService implements ContractOfferService {
@@ -211,25 +214,10 @@ class IdsApiMultipartEndpointV1IntegrationTestServiceExtension implements Servic
         }
 
         @Override
-        public void createData(String processId, String key, Object data) {
-        }
-
-        @Override
-        public void updateData(String processId, String key, Object data) {
-        }
-
-        @Override
-        public void deleteData(String processId, String key) {
-        }
-
-        @Override
-        public void deleteData(String processId, Set<String> keys) {
-        }
-
-        @Override
-        public <T> T findData(Class<T> type, String processId, String resourceDefinitionId) {
+        public Stream<TransferProcess> findAll(QuerySpec querySpec) {
             return null;
         }
+
     }
 
     private static class FakeRemoteMessageDispatcherRegistry implements RemoteMessageDispatcherRegistry {
@@ -251,6 +239,11 @@ class IdsApiMultipartEndpointV1IntegrationTestServiceExtension implements Servic
         @Override
         public @NotNull Collection<ContractDefinition> findAll() {
             return contractDefinitions;
+        }
+
+        @Override
+        public @NotNull Stream<ContractDefinition> findAll(QuerySpec spec) {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -333,6 +326,11 @@ class IdsApiMultipartEndpointV1IntegrationTestServiceExtension implements Servic
         public @NotNull List<ContractNegotiation> nextForState(int state, int max) {
             return Collections.emptyList();
         }
+
+        @Override
+        public Stream<ContractNegotiation> queryNegotiations(QuerySpec querySpec) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static class FakeProviderContractNegotiationManager implements ProviderContractNegotiationManager {
@@ -340,6 +338,10 @@ class IdsApiMultipartEndpointV1IntegrationTestServiceExtension implements Servic
         @Override
         public NegotiationResult declined(ClaimToken token, String negotiationId) {
             return NegotiationResult.success(fakeContractNegotiation());
+        }
+
+        @Override
+        public void enqueueCommand(ContractNegotiationCommand command) {
         }
 
         @Override
@@ -378,6 +380,10 @@ class IdsApiMultipartEndpointV1IntegrationTestServiceExtension implements Servic
         @Override
         public NegotiationResult declined(ClaimToken token, String negotiationId) {
             return NegotiationResult.success(fakeContractNegotiation());
+        }
+
+        @Override
+        public void enqueueCommand(ContractNegotiationCommand command) {
         }
     }
 }

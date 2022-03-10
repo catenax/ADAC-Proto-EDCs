@@ -14,13 +14,14 @@
 
 package org.eclipse.dataspaceconnector.spi.transfer.store;
 
+import org.eclipse.dataspaceconnector.spi.query.QuerySpec;
 import org.eclipse.dataspaceconnector.spi.system.Feature;
 import org.eclipse.dataspaceconnector.spi.types.domain.transfer.TransferProcess;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Manages persistent storage of {@link TransferProcess} state.
@@ -29,8 +30,15 @@ import java.util.Set;
 public interface TransferProcessStore {
     String FEATURE = "edc:core:transfer:transferprocessstore";
 
+    /**
+     * Returns the transfer process for the id or null if not found.
+     */
+    @Nullable
     TransferProcess find(String id);
 
+    /**
+     * Returns the transfer process for the data request id or null if not found.
+     */
     @Nullable
     String processIdForTransferId(String id);
 
@@ -51,20 +59,26 @@ public interface TransferProcessStore {
     @NotNull
     List<TransferProcess> nextForState(int state, int max);
 
+    /**
+     * Creates a transfer process.
+     */
     void create(TransferProcess process);
 
+    /**
+     * Updates a transfer process.
+     */
     void update(TransferProcess process);
 
+    /**
+     * Deletes a transfer process.
+     */
     void delete(String processId);
 
-    void createData(String processId, String key, Object data);
-
-    void updateData(String processId, String key, Object data);
-
-    void deleteData(String processId, String key);
-
-    void deleteData(String processId, Set<String> keys);
-
-    <T> T findData(Class<T> type, String processId, String resourceDefinitionId);
-
+    /**
+     * Returns all the transfer processes in the store that are covered by a given {@link QuerySpec}.
+     * <p>
+     * Note: supplying a sort field that does not exist on the {@link TransferProcess} may cause some implementations
+     * to return an empty Stream, others will return an unsorted Stream, depending on the backing storage implementation.
+     */
+    Stream<TransferProcess> findAll(QuerySpec querySpec);
 }

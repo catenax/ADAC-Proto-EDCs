@@ -27,8 +27,10 @@ import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
 import org.eclipse.dataspaceconnector.spi.transfer.TransferProcessManager;
 import org.eclipse.dataspaceconnector.spi.transfer.flow.DataFlowManager;
+import org.eclipse.dataspaceconnector.spi.transfer.inline.DataOperatorRegistry;
 import org.eclipse.dataspaceconnector.spi.transfer.provision.ProvisionManager;
 import org.eclipse.dataspaceconnector.spi.transfer.provision.ResourceManifestGenerator;
+import org.eclipse.dataspaceconnector.transfer.core.inline.InlineDataFlowController;
 import org.eclipse.dataspaceconnector.transfer.demo.protocols.dispatcher.LoopbackDispatcher;
 import org.eclipse.dataspaceconnector.transfer.demo.protocols.http.PubSubHttpEndpoint;
 import org.eclipse.dataspaceconnector.transfer.demo.protocols.object.DemoObjectStorage;
@@ -45,8 +47,6 @@ import org.eclipse.dataspaceconnector.transfer.demo.protocols.stream.PushStreamP
 import org.eclipse.dataspaceconnector.transfer.demo.protocols.stream.PushStreamResourceGenerator;
 import org.eclipse.dataspaceconnector.transfer.demo.protocols.ws.PubSubServerEndpoint;
 import org.eclipse.dataspaceconnector.transfer.demo.protocols.ws.WebSocketFactory;
-import org.eclipse.dataspaceconnector.transfer.inline.core.InlineDataFlowController;
-import org.eclipse.dataspaceconnector.transfer.inline.spi.DataOperatorRegistry;
 
 /**
  * An extension that demonstrates data transfers and supports three flow types:
@@ -90,7 +90,7 @@ public class DemoProtocolsTransferExtension implements ServiceExtension {
         new WebSocketFactory().publishEndpoint(PubSubServerEndpoint.class, () -> new PubSubServerEndpoint(topicManager, objectMapper, monitor), jettyService);
 
         httpEndpoint = new PubSubHttpEndpoint(topicManager);
-        context.getService(WebService.class).registerController(httpEndpoint);
+        context.getService(WebService.class).registerResource(httpEndpoint);
 
         var messageDispatcher = context.getService(RemoteMessageDispatcherRegistry.class);
         var processManager = context.getService(TransferProcessManager.class);

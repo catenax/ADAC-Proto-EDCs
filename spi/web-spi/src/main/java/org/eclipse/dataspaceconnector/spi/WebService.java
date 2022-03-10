@@ -23,8 +23,21 @@ import org.eclipse.dataspaceconnector.spi.system.Feature;
 public interface WebService {
 
     /**
-     * Registers a JAX-RS resource instance, or controller. Extensions may contribute bespoke APIs to the runtime.
+     * Registers a resource (e.g. a controller or a filter) with the webservice, making it available for the default port mapping.
+     *
+     * @param resource a resource
      */
-    void registerController(Object controller);
+    void registerResource(Object resource);
 
+    /**
+     * Registers a resource (e.g. a controller or a filter) with the webservice, making it only available for
+     * the port mapping that matches the {@code contextAlias} parameter.
+     * <p>
+     * Note that registering a resource for a context alias, for which no port mapping exists, may raise an exception when
+     * starting the WebService.
+     *
+     * @param contextAlias a String identifying the respective port mapping.
+     * @param resource     a resource
+     */
+    void registerResource(String contextAlias, Object resource);
 }

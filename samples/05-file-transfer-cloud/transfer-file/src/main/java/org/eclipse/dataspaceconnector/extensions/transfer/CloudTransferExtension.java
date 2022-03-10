@@ -1,6 +1,7 @@
 package org.eclipse.dataspaceconnector.extensions.transfer;
 
 import net.jodah.failsafe.RetryPolicy;
+import org.eclipse.dataspaceconnector.aws.s3.core.S3ClientProviderImpl;
 import org.eclipse.dataspaceconnector.aws.s3.operator.S3BucketReader;
 import org.eclipse.dataspaceconnector.aws.s3.operator.S3BucketWriter;
 import org.eclipse.dataspaceconnector.azure.blob.core.api.BlobStoreApi;
@@ -13,10 +14,10 @@ import org.eclipse.dataspaceconnector.spi.system.Inject;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
 import org.eclipse.dataspaceconnector.spi.transfer.flow.DataFlowManager;
+import org.eclipse.dataspaceconnector.spi.transfer.inline.DataOperatorRegistry;
 import org.eclipse.dataspaceconnector.spi.types.domain.DataAddress;
 import org.eclipse.dataspaceconnector.spi.types.domain.asset.Asset;
-import org.eclipse.dataspaceconnector.transfer.inline.core.InlineDataFlowController;
-import org.eclipse.dataspaceconnector.transfer.inline.spi.DataOperatorRegistry;
+import org.eclipse.dataspaceconnector.transfer.core.inline.InlineDataFlowController;
 
 import java.time.temporal.ChronoUnit;
 
@@ -43,15 +44,18 @@ public class CloudTransferExtension implements ServiceExtension {
     }
 
     private void registerFlowController(ServiceExtensionContext context) {
+        var s3ClientProvider = new S3ClientProviderImpl();
         var vault = context.getService(Vault.class);
+
         dataOperatorRegistry.registerReader(new BlobStoreReader(blobStoreApi));
-        dataOperatorRegistry.registerReader(new S3BucketReader());
+        dataOperatorRegistry.registerReader(new S3BucketReader(context.getMonitor(), vault, s3ClientProvider));
 
 
         RetryPolicy<Object> retryPolicy = new RetryPolicy<>()
                 .withBackoff(500, 5000, ChronoUnit.MILLIS)
                 .withMaxRetries(3);
-        dataOperatorRegistry.registerWriter(new S3BucketWriter(context.getMonitor(), context.getTypeManager(), retryPolicy));
+
+        dataOperatorRegistry.registerWriter(new S3BucketWriter(context.getMonitor(), context.getTypeManager(), retryPolicy, s3ClientProvider));
         dataOperatorRegistry.registerWriter(new BlobStoreWriter(context.getMonitor(), context.getTypeManager()));
 
         dataFlowMgr.register(new InlineDataFlowController(vault, context.getMonitor(), dataOperatorRegistry, dataAddressResolver));

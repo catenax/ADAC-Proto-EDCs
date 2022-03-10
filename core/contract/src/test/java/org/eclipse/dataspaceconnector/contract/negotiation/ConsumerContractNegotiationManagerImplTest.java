@@ -14,6 +14,9 @@
 package org.eclipse.dataspaceconnector.contract.negotiation;
 
 import org.eclipse.dataspaceconnector.policy.model.Policy;
+import org.eclipse.dataspaceconnector.spi.command.CommandQueue;
+import org.eclipse.dataspaceconnector.spi.command.CommandRunner;
+import org.eclipse.dataspaceconnector.spi.contract.negotiation.observe.ContractNegotiationObservable;
 import org.eclipse.dataspaceconnector.spi.contract.negotiation.response.NegotiationResult;
 import org.eclipse.dataspaceconnector.spi.contract.negotiation.store.ContractNegotiationStore;
 import org.eclipse.dataspaceconnector.spi.contract.validation.ContractValidationService;
@@ -24,11 +27,13 @@ import org.eclipse.dataspaceconnector.spi.result.Result;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.agreement.ContractAgreement;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractNegotiation;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractOfferRequest;
+import org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.command.ContractNegotiationCommand;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.offer.ContractOffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +45,7 @@ import static org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiati
 import static org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractNegotiationStates.INITIAL;
 import static org.eclipse.dataspaceconnector.spi.types.domain.contract.negotiation.ContractNegotiationStates.REQUESTED;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -54,20 +60,19 @@ class ConsumerContractNegotiationManagerImplTest {
     private ConsumerContractNegotiationManagerImpl negotiationManager;
 
     @BeforeEach
-    void setUp() throws Exception {
-
-        Monitor monitor = mock(Monitor.class);
+    void setUp() {
+        CommandQueue<ContractNegotiationCommand> queue = mock(CommandQueue.class);
+        when(queue.dequeue(anyInt())).thenReturn(new ArrayList<>());
 
         negotiationManager = ConsumerContractNegotiationManagerImpl.Builder.newInstance()
                 .validationService(validationService)
                 .dispatcherRegistry(dispatcherRegistry)
-                .monitor(monitor)
+                .monitor(mock(Monitor.class))
+                .commandQueue(queue)
+                .commandRunner(mock(CommandRunner.class))
+                .observable(mock(ContractNegotiationObservable.class))
+                .store(store)
                 .build();
-
-        //TODO hand over store in start method, but run method should not be executed
-        var negotiationStoreField = ConsumerContractNegotiationManagerImpl.class.getDeclaredField("negotiationStore");
-        negotiationStoreField.setAccessible(true);
-        negotiationStoreField.set(negotiationManager, store);
     }
 
     @Test

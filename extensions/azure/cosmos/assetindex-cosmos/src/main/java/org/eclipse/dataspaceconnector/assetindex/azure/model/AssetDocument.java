@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import org.eclipse.dataspaceconnector.cosmos.azure.CosmosDocument;
+import org.eclipse.dataspaceconnector.azure.cosmos.CosmosDocument;
 import org.eclipse.dataspaceconnector.spi.types.domain.DataAddress;
 import org.eclipse.dataspaceconnector.spi.types.domain.asset.Asset;
 
@@ -47,9 +47,6 @@ public class AssetDocument extends CosmosDocument<Map<String, Object>> {
         this.dataAddress = dataAddress;
     }
 
-    public static String sanitize(String key) {
-        return key.replace(':', '_');
-    }
 
     private static Map<String, Object> sanitizeProperties(Asset asset) {
         return asset.getProperties().entrySet().stream()
