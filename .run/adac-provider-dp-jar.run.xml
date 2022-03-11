@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="adac-provider-dp-jar" type="JarApplication">
+    <option name="JAR_PATH" value="$PROJECT_DIR$/adac/adac-provider-dp/build/libs/adac-provider-dp.jar" />
+    <option name="VM_PARAMETERS" value="-Dweb.http.port=9040 -Dweb.http.path=/api -Dweb.http.public.port=9041 -Dweb.http.public.path=/public -Dweb.http.control.port=9042 -Dweb.http.control.path=/control -Dedc.controlplane.validation-endpoint=http://localhost:9031/validation/validation" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/adac/adac-provider-dp" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="adac-provider-dp-build" run_configuration_type="GradleRunConfiguration" />
+    </method>
+  </configuration>
+</component>

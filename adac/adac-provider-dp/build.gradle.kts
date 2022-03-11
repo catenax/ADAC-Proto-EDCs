@@ -26,8 +26,6 @@ dependencies {
     implementation(project(":core:boot"))
     implementation(project(":extensions:http"))
 
-    implementation(project(":extensions:filesystem:configuration-fs"))
-
     implementation(project(":extensions:data-plane:data-plane-spi"))
     implementation(project(":extensions:data-plane:data-plane-framework"))
     implementation(project(":extensions:data-plane:data-plane-http"))

@@ -20,16 +20,14 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
-dependencies {
-    implementation(project(":spi:web-spi"))
-    implementation(project(":core:base"))
-    implementation(project(":core:boot"))
-    implementation(project(":extensions:http"))
+val rsApi: String by project
 
-    implementation(project(":extensions:data-plane:data-plane-spi"))
-    implementation(project(":extensions:data-plane:data-plane-framework"))
-    implementation(project(":extensions:data-plane:data-plane-http"))
-    implementation(project(":extensions:data-plane:data-plane-api"))
+dependencies {
+    implementation(project(":extensions:http"))
+    implementation(project(":core:boot"))
+    implementation(project(":core:base"))
+
+    implementation("jakarta.ws.rs:jakarta.ws.rs-api:$rsApi")
 }
 
 application {
@@ -39,5 +37,5 @@ application {
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
     exclude("**/pom.properties", "**/pom.xm")
     mergeServiceFiles()
-    archiveFileName.set("adac-consumer-dp.jar")
+    archiveFileName.set("adac-sample-backend.jar")
 }
