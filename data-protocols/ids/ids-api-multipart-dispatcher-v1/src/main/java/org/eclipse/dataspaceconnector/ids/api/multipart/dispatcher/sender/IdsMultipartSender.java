@@ -178,8 +178,10 @@ abstract class IdsMultipartSender<M extends RemoteMessage, R> implements IdsMess
 
         var multipartRequestBody = multipartBuilder.build();
 
-        var proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 8888));
-        httpClient = httpClient.newBuilder().proxy(proxy).build();
+        // with proxy
+//        var proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 8888));
+//        httpClient = httpClient.newBuilder().proxy(proxy).build();
+        httpClient = httpClient.newBuilder().build();
         // Build HTTP request
         var httpRequest = new Request.Builder()
                 .url(requestUrl)
